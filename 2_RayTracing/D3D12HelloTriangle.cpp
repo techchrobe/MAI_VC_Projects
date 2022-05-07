@@ -38,6 +38,8 @@ void D3D12HelloTriangle::OnInit()
 	ThrowIfFailed(m_commandList->Close());
 
 	CreateRaytracingPipeline();
+	CreatePerInstanceConstantBuffers();
+	//CreateGlobalConstantBuffer();
 	CreateRaytracingOutputBuffer();
 	CreateCameraBuffer();
 	CreateShaderResourceHeap();
@@ -247,6 +249,8 @@ void D3D12HelloTriangle::LoadAssets()
 		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
 		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
 		m_vertexBufferView.SizeInBytes = vertexBufferSize;
+
+		CreatePlaneVB();
 	}
 
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
@@ -338,6 +342,9 @@ void D3D12HelloTriangle::PopulateCommandList()
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 		m_commandList->DrawInstanced(3, 1, 0, 0);
+
+		m_commandList->IASetVertexBuffers(0, 1, &m_planeBufferView);
+		m_commandList->DrawInstanced(6, 1, 0, 0);
 	}
 	else
 	{
@@ -484,8 +491,9 @@ AccelerationStructureBuffers D3D12HelloTriangle::CreateBottomLevelAS(std::vector
 void D3D12HelloTriangle::CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>>& instances)
 {
 	// Gather all the instances into the builder helper
-	for (size_t i = 0; i < instances.size(); i++) { 
-		m_topLevelASGenerator.AddInstance(instances[i].first.Get(), instances[i].second, static_cast<UINT>(i), static_cast<UINT>(0)); 
+	for (size_t i = 0; i < instances.size(); i++)
+	{
+		m_topLevelASGenerator.AddInstance(instances[i].first.Get(), instances[i].second, static_cast<UINT>(i), static_cast<UINT>(i));
 	}
 
 	// As for the bottom-level AS, the building the AS requires some scratch space to store temporary data in addition to the actual AS.
@@ -509,9 +517,13 @@ void D3D12HelloTriangle::CreateAccelerationStructures()
 {
 	// Build the bottom AS from the Triangle vertex buffer
 	AccelerationStructureBuffers bottomLevelBuffers = CreateBottomLevelAS({{m_vertexBuffer.Get(), 3}});
+	AccelerationStructureBuffers planeBottomLevelBuffers = CreateBottomLevelAS({ {m_planeBuffer.Get(), 6} });
 	
-	// Just one instance for now
-	m_instances = {{bottomLevelBuffers.pResult, XMMatrixIdentity()}};
+	// Three triangles and a plane
+	m_instances = { {bottomLevelBuffers.pResult, XMMatrixIdentity()},
+					{bottomLevelBuffers.pResult, XMMatrixTranslation(.6f, 0, 0)},
+					{bottomLevelBuffers.pResult, XMMatrixTranslation(-.6f, 0, 0)}, 
+					{planeBottomLevelBuffers.pResult, XMMatrixTranslation(0, 0, 0)}}; // #DXR Extra: Per-Instance Data
 	CreateTopLevelAS(m_instances);
 	
 	// Flush the command list and wait for it to finish
@@ -526,6 +538,7 @@ void D3D12HelloTriangle::CreateAccelerationStructures()
 
 	// Store the AS buffers. The rest of the buffers will be released once we exit the function
 	m_bottomLevelAS = bottomLevelBuffers.pResult;
+
 }
 
 // Following Code is from the DX12 Raytracing Tutorial Part 2
@@ -580,7 +593,8 @@ ComPtr<ID3D12RootSignature> D3D12HelloTriangle::CreateMissSignature()
 ComPtr<ID3D12RootSignature> D3D12HelloTriangle::CreateHitSignature()
 {
 	nv_helpers_dx12::RootSignatureGenerator rsc;
-	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV);
+	//rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV);
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
 	return rsc.Generate(m_device.Get(), true);
 }
 
@@ -608,7 +622,7 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// Note that a single library can contain an arbitrary number of symbols, whose semantic is given in HLSL using the [shader("xxx")] syntax
 	pipeline.AddLibrary(m_rayGenLibrary.Get(), { L"RayGen" });
 	pipeline.AddLibrary(m_missLibrary.Get(), { L"Miss" });
-	pipeline.AddLibrary(m_hitLibrary.Get(), { L"ClosestHit" });
+	pipeline.AddLibrary(m_hitLibrary.Get(), { L"ClosestHit", L"PlaneClosestHit" });
 
 
 	// To be used, each DX12 shader needs a root signature defining which parameters and buffers will be accessed.
@@ -619,6 +633,7 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// Hit group for the triangles, with a shader simply interpolating vertex
 	// colors
 	pipeline.AddHitGroup(L"HitGroup", L"ClosestHit");
+	pipeline.AddHitGroup(L"PlaneHitGroup", L"PlaneClosestHit");
 
 	// The following section associates the root signature to each shader. Note
 	// that we can explicitly show that some shaders share the same root signature
@@ -627,7 +642,7 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// closest-hit shaders share the same root signature.
 	pipeline.AddRootSignatureAssociation(m_rayGenSignature.Get(), { L"RayGen" });
 	pipeline.AddRootSignatureAssociation(m_missSignature.Get(), { L"Miss" });
-	pipeline.AddRootSignatureAssociation(m_hitSignature.Get(), { L"HitGroup" });
+	pipeline.AddRootSignatureAssociation(m_hitSignature.Get(), { L"HitGroup", L"PlaneHitGroup" });
 
 	// The payload size defines the maximum size of the data carried by the rays, ie. the the data exchanged between shaders, such as the HitInfo structure in the HLSL code.
 	// It is important to keep this value as low as possible as a too high value would result in unnecessary memory consumption and cache trashing.
@@ -715,8 +730,13 @@ void D3D12HelloTriangle::CreateShaderBindingTable()
 	// The miss and hit shaders do not access any external resources: instead they communicate their results through the ray payload
 	m_sbtHelper.AddMissProgram(L"Miss", {});
 	
-	// Adding the triangle hit shader
-	m_sbtHelper.AddHitGroup(L"HitGroup", { (void*)(m_vertexBuffer->GetGPUVirtualAddress()) });
+	// Adding the triangles hit shader
+	for(int i = 0; i < 3; ++i) {
+		m_sbtHelper.AddHitGroup(L"HitGroup", { (void*)(m_perInstanceConstantBuffers[i]->GetGPUVirtualAddress()) });
+	}
+
+	// Adding plane hit shader
+	m_sbtHelper.AddHitGroup(L"PlaneHitGroup", {});
 
 	// Compute the size of the SBT given the number of shaders and their
 	// parameters
@@ -785,4 +805,70 @@ void D3D12HelloTriangle::UpdateCameraBuffer()
 	ThrowIfFailed(m_cameraBuffer->Map(0, nullptr, (void **)&pData));
 	memcpy(pData, matrices.data(), m_cameraBufferSize);
 	m_cameraBuffer->Unmap(0, nullptr);
+}
+
+void D3D12HelloTriangle::CreatePlaneVB()
+{
+	// Define the geometry for a plane.
+	Vertex planeVertices[] = {
+		{{-1.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 0
+		{{-1.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
+		{{01.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
+		{{01.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
+		{{-1.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
+		{{01.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}} // 4
+	};
+	
+	const UINT planeBufferSize = sizeof(planeVertices);
+	
+	CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	CD3DX12_RESOURCE_DESC bufferResource = CD3DX12_RESOURCE_DESC::Buffer(planeBufferSize);
+
+	ThrowIfFailed(m_device->CreateCommittedResource( &heapProperty, D3D12_HEAP_FLAG_NONE, &bufferResource, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_planeBuffer)));
+
+	// Copy the triangle data to the vertex buffer.
+	UINT8* pVertexDataBegin;
+	CD3DX12_RANGE readRange(0, 0);
+	ThrowIfFailed(m_planeBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	memcpy(pVertexDataBegin, planeVertices, sizeof(planeVertices));
+	m_planeBuffer->Unmap(0, nullptr);
+}
+
+void D3D12HelloTriangle::CreateGlobalConstantBuffer()
+{
+	// Due to HLSL packing rules, we create the CB with 9 float4 (each needs to start on a 16-byte boundary)
+	XMVECTOR bufferData[] = {
+		// A 
+		XMVECTOR{1.0f, 0.0f, 0.0f, 1.0f}, XMVECTOR{0.7f, 0.4f, 0.0f, 1.0f}, XMVECTOR{0.4f, 0.7f, 0.0f, 1.0f},
+		// B
+		XMVECTOR{0.0f, 1.0f, 0.0f, 1.0f}, XMVECTOR{0.0f, 0.7f, 0.4f, 1.0f}, XMVECTOR{0.0f, 0.4f, 0.7f, 1.0f},
+		// C
+		XMVECTOR{0.0f, 0.0f, 1.0f, 1.0f}, XMVECTOR{0.4f, 0.0f, 0.7f, 1.0f}, XMVECTOR{0.7f, 0.0f, 0.4f, 1.0f}, }; 
+	
+	// Create our buffer
+	m_globalConstantBuffer = nv_helpers_dx12::CreateBuffer( m_device.Get(), sizeof(bufferData), D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, nv_helpers_dx12::kUploadHeapProps);
+	
+	// Copy CPU memory to GPU
+	uint8_t* pData;
+	ThrowIfFailed(m_globalConstantBuffer->Map(0, nullptr, (void**)&pData));
+	memcpy(pData, bufferData, sizeof(bufferData));
+	m_globalConstantBuffer->Unmap(0, nullptr);
+}
+
+void D3D12HelloTriangle::CreatePerInstanceConstantBuffers()
+{
+	// Due to HLSL packing rules, we create the CB with 9 float4 (each needs to start on a 16-byte boundary)
+	XMVECTOR bufferData[] = { // A 
+		XMVECTOR{1.0f, 0.0f, 0.0f, 1.0f}, XMVECTOR{1.0f, 0.4f, 0.0f, 1.0f}, XMVECTOR{1.f, 0.7f, 0.0f, 1.0f}, // B 
+		XMVECTOR{0.0f, 1.0f, 0.0f, 1.0f}, XMVECTOR{0.0f, 1.0f, 0.4f, 1.0f}, XMVECTOR{0.0f, 1.0f, 0.7f, 1.0f}, // C 
+		XMVECTOR{0.0f, 0.0f, 1.0f, 1.0f}, XMVECTOR{0.4f, 0.0f, 1.0f, 1.0f}, XMVECTOR{0.7f, 0.0f, 1.0f, 1.0f}, };
+	
+	m_perInstanceConstantBuffers.resize(3);
+	int i(0);
+	for (auto& cb : m_perInstanceConstantBuffers) { 
+		const uint32_t bufferSize = sizeof(XMVECTOR) * 3; cb = nv_helpers_dx12::CreateBuffer(m_device.Get(), bufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, nv_helpers_dx12::kUploadHeapProps);
+		uint8_t* pData; ThrowIfFailed(cb->Map(0, nullptr, (void**)&pData));
+		memcpy(pData, &bufferData[i * 3], bufferSize); cb->Unmap(0, nullptr);
+		++i;
+	}
 }
