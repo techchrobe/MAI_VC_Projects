@@ -12,6 +12,9 @@
 #pragma once
 
 #include "DXSample.h"
+#include <dxcapi.h>
+#include <vector>
+#include "nv_helpers_dx12/TopLevelASGenerator.h"
 
 using namespace DirectX;
 
@@ -21,6 +24,15 @@ using namespace DirectX;
 // referenced by the GPU.
 // An example of this can be found in the class method: OnDestroy().
 using Microsoft::WRL::ComPtr;
+
+// #DXR
+struct AccelerationStructureBuffers
+{
+	ComPtr<ID3D12Resource> pScratch; // Scratch memory for AS builder
+	ComPtr<ID3D12Resource> pResult; // Where the AS is
+	ComPtr<ID3D12Resource> pInstanceDesc; // Hold the matrices of the instances
+
+};
 
 class D3D12HelloTriangle : public DXSample
 {
@@ -73,6 +85,24 @@ private:
 	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
 	bool m_raster = true;
 
+	ComPtr<ID3D12Resource> m_bottomLevelAS; // Storage for the bottom Level AS
+	nv_helpers_dx12::TopLevelASGenerator m_topLevelASGenerator;
+	AccelerationStructureBuffers m_topLevelASBuffers;
+	std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>> m_instances;
+
 	void CheckRaytracingSupport();
 	virtual void OnKeyUp(UINT8 key);
+	/// Create the acceleration structure of an instance
+	///
+	/// \param vVertexBuffers : pair of buffer and vertex count
+	/// \return AccelerationStructureBuffers for TLAS
+	AccelerationStructureBuffers CreateBottomLevelAS(std::vector<std::pair<ComPtr<ID3D12Resource>, uint32_t>> vVertexBuffers);
+
+	/// Create the main acceleration structure that holds
+	/// all instances of the scene
+	/// \param instances : pair of BLAS and transform
+	void CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>>& instances);
+
+	/// Create all acceleration structures, bottom and top
+	void CreateAccelerationStructures();
 };
