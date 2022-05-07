@@ -573,9 +573,9 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// The pipeline contains the DXIL code of all the shaders potentially executed during the raytracing process. 
 	// This section compiles the HLSL code into a set of DXIL libraries. We chose to separate the code in several libraries by semantic (ray generation, hit, miss) for clarity
 	// Any code layout can be used.
-	m_rayGenLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Shaders/RayGen.hlsl");
-	m_missLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Shaders/Miss.hlsl");
-	m_hitLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Shaders/Hit.hlsl");
+	m_rayGenLibrary = nv_helpers_dx12::CompileShaderLibrary(L"RayGen.hlsl");
+	m_missLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Miss.hlsl");
+	m_hitLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Hit.hlsl");
 
 
 	// In a way similar to DLLs, each library is associated with a number of exported symbols.
@@ -682,8 +682,7 @@ void D3D12HelloTriangle::CreateShaderBindingTable()
 	m_sbtHelper.AddMissProgram(L"Miss", {});
 	
 	// Adding the triangle hit shader
-	m_sbtHelper.AddHitGroup(L"HitGroup",
-		{ (void*)(m_vertexBuffer->GetGPUVirtualAddress()) });
+	m_sbtHelper.AddHitGroup(L"HitGroup", { (void*)(m_vertexBuffer->GetGPUVirtualAddress()) });
 
 	// Compute the size of the SBT given the number of shaders and their
 	// parameters
