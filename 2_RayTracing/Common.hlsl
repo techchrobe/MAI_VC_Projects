@@ -14,3 +14,9 @@ struct Attributes
 {
   float2 bary;
 };
+
+// Ray payload for the shadow rays
+struct ShadowHitInfo
+{
+    bool isHit;
+};

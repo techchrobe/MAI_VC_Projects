@@ -493,7 +493,7 @@ void D3D12HelloTriangle::CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3
 	// Gather all the instances into the builder helper
 	for (size_t i = 0; i < instances.size(); i++)
 	{
-		m_topLevelASGenerator.AddInstance(instances[i].first.Get(), instances[i].second, static_cast<UINT>(i), static_cast<UINT>(i));
+		m_topLevelASGenerator.AddInstance(instances[i].first.Get(), instances[i].second, static_cast<UINT>(i), static_cast<UINT>(2 * i));
 	}
 
 	// As for the bottom-level AS, the building the AS requires some scratch space to store temporary data in addition to the actual AS.
@@ -595,6 +595,7 @@ ComPtr<ID3D12RootSignature> D3D12HelloTriangle::CreateHitSignature()
 	nv_helpers_dx12::RootSignatureGenerator rsc;
 	//rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV);
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);
+	rsc.AddHeapRangesParameter({ { 2, 1, 0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1}, });
 	return rsc.Generate(m_device.Get(), true);
 }
 
@@ -615,6 +616,7 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	m_rayGenLibrary = nv_helpers_dx12::CompileShaderLibrary(L"RayGen.hlsl");
 	m_missLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Miss.hlsl");
 	m_hitLibrary = nv_helpers_dx12::CompileShaderLibrary(L"Hit.hlsl");
+	m_shadowLibrary = nv_helpers_dx12::CompileShaderLibrary(L"ShadowRay.hlsl");
 
 
 	// In a way similar to DLLs, each library is associated with a number of exported symbols.
@@ -623,17 +625,20 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	pipeline.AddLibrary(m_rayGenLibrary.Get(), { L"RayGen" });
 	pipeline.AddLibrary(m_missLibrary.Get(), { L"Miss" });
 	pipeline.AddLibrary(m_hitLibrary.Get(), { L"ClosestHit", L"PlaneClosestHit" });
+	pipeline.AddLibrary(m_shadowLibrary.Get(), { L"ShadowClosestHit", L"ShadowMiss" });
 
 
 	// To be used, each DX12 shader needs a root signature defining which parameters and buffers will be accessed.
 	m_rayGenSignature = CreateRayGenSignature();
 	m_missSignature = CreateMissSignature();
 	m_hitSignature = CreateHitSignature();
+	m_shadowSignature = CreateHitSignature();
 
 	// Hit group for the triangles, with a shader simply interpolating vertex
 	// colors
 	pipeline.AddHitGroup(L"HitGroup", L"ClosestHit");
 	pipeline.AddHitGroup(L"PlaneHitGroup", L"PlaneClosestHit");
+	pipeline.AddHitGroup(L"ShadowHitGroup", L"ShadowClosestHit");
 
 	// The following section associates the root signature to each shader. Note
 	// that we can explicitly show that some shaders share the same root signature
@@ -641,8 +646,9 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// to as hit groups, meaning that the underlying intersection, any-hit and
 	// closest-hit shaders share the same root signature.
 	pipeline.AddRootSignatureAssociation(m_rayGenSignature.Get(), { L"RayGen" });
-	pipeline.AddRootSignatureAssociation(m_missSignature.Get(), { L"Miss" });
+	pipeline.AddRootSignatureAssociation(m_missSignature.Get(), { L"Miss", L"ShadowMiss" });
 	pipeline.AddRootSignatureAssociation(m_hitSignature.Get(), { L"HitGroup", L"PlaneHitGroup" });
+	pipeline.AddRootSignatureAssociation(m_shadowSignature.Get(), { L"ShadowHitGroup" });
 
 	// The payload size defines the maximum size of the data carried by the rays, ie. the the data exchanged between shaders, such as the HitInfo structure in the HLSL code.
 	// It is important to keep this value as low as possible as a too high value would result in unnecessary memory consumption and cache trashing.
@@ -656,7 +662,7 @@ void D3D12HelloTriangle::CreateRaytracingPipeline()
 	// Our sample code traces only primary rays, which then requires a trace depth of 1.
 	// Note that this recursion depth should be kept to a minimum for best performance.
 	// Path tracing algorithms can be easily flattened into a simple loop in the ray generation.
-	pipeline.SetMaxRecursionDepth(1);
+	pipeline.SetMaxRecursionDepth(2);
 
 	// Compile the pipeline for execution on the GPU
 	m_rtStateObject = pipeline.Generate();
@@ -729,14 +735,17 @@ void D3D12HelloTriangle::CreateShaderBindingTable()
 	
 	// The miss and hit shaders do not access any external resources: instead they communicate their results through the ray payload
 	m_sbtHelper.AddMissProgram(L"Miss", {});
+	m_sbtHelper.AddMissProgram(L"ShadowMiss", {});
 	
 	// Adding the triangles hit shader
 	for(int i = 0; i < 3; ++i) {
 		m_sbtHelper.AddHitGroup(L"HitGroup", { (void*)(m_perInstanceConstantBuffers[i]->GetGPUVirtualAddress()) });
+		m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
 	}
 
 	// Adding plane hit shader
-	m_sbtHelper.AddHitGroup(L"PlaneHitGroup", {});
+	m_sbtHelper.AddHitGroup(L"PlaneHitGroup", { heapPointer });
+	m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
 
 	// Compute the size of the SBT given the number of shaders and their
 	// parameters

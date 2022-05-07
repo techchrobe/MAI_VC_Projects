@@ -153,4 +153,8 @@ private:
 
 	void CreatePerInstanceConstantBuffers();
 	std::vector<ComPtr<ID3D12Resource>> m_perInstanceConstantBuffers;
+
+	// #DXR Extra - Another ray type
+	ComPtr<IDxcBlob> m_shadowLibrary;
+	ComPtr<ID3D12RootSignature> m_shadowSignature;
 };
