@@ -374,6 +374,11 @@ void D3D12HelloTriangle::PopulateCommandList()
 		desc.Height = GetHeight();
 		desc.Depth = 1;
 
+		// Bind the raytracing pipeline
+		m_commandList->SetPipelineState1(m_rtStateObject.Get());
+		// Dispatch the rays and write to the raytracing output
+		m_commandList->DispatchRays(&desc);
+
 		// The raytracing output needs to be copied to the actual render target used
 		// for display. For this, we need to transition the raytracing output from a
 		// UAV to a copy source, and the render target buffer to a copy destination.
