@@ -1,5 +1,13 @@
 #include "Common.hlsl"
 
+cbuffer CameraParams : register(b0)
+{ 
+	float4x4 view;
+	float4x4 projection;
+	float4x4 viewI;
+	float4x4 projectionI;
+}
+
 // Raytracing output texture, accessed as a UAV
 RWTexture2D< float4 > gOutput : register(u0);
 
@@ -19,8 +27,9 @@ void RayGen() {
 	
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
-	ray.Origin = float3(d.x, -d.y, 1);
-	ray.Direction = float3(0, 0, -1);
+	ray.Origin = mul(viewI, float4(0, 0, 0, 1));
+    float4 target = mul(projectionI, float4(d.x, -d.y, 1, 1));
+    ray.Direction = mul(viewI, float4(target.xyz, 0));
 	ray.TMin = 0;
 	ray.TMax = 100000;
 	
