@@ -84,7 +84,6 @@ private:
 	// Raytracing
 	ComPtr<ID3D12Device5> m_device;
 	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
-	bool m_raster = false;
 
 	ComPtr<ID3D12Resource> m_bottomLevelAS; // Storage for the bottom Level AS
 	nv_helpers_dx12::TopLevelASGenerator m_topLevelASGenerator;
@@ -92,7 +91,6 @@ private:
 	std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>> m_instances;
 
 	void CheckRaytracingSupport();
-	virtual void OnKeyUp(UINT8 key);
 	/// Create the acceleration structure of an instance
 	///
 	/// \param vVertexBuffers : pair of buffer and vertex count
