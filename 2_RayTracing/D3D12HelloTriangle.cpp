@@ -224,6 +224,7 @@ void D3D12HelloTriangle::LoadAssets()
 			{{-0.25f, -0.25f * m_aspectRatio, 0.25f}, {1.0f, 0.0f, 1.0f, 1.0f}}
 		};*/
 
+		// Define the geometry for a cube.
 		Vertex cubeVertices[] =
 		{
 			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},

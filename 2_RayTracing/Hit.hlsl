@@ -23,7 +23,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib) {
         float3(1.f - attrib.bary.x - attrib.bary.y, attrib.bary.x, attrib.bary.y);
 
     // #DXR Extra: Per-Instance Data
-    float3 hitColor = A * barycentrics.x + B * barycentrics.y + C * barycentrics.z;
+    float3 hitColor = B* barycentrics.x + B*barycentrics.y + B*barycentrics.z;
 
     payload.colorAndDistance = float4(hitColor, RayTCurrent());
 }
