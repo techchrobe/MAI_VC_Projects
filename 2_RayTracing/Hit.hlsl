@@ -31,7 +31,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib) {
 [shader("closesthit")]
 void PlaneClosestHit(inout HitInfo payload, Attributes attrib)
 {
-    float3 lightPos = float3(2, 2, -2);
+    float3 lightPos = float3(-2, 2, 2);
 
     // Find the world - space hit position
     float3 worldOrigin = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();

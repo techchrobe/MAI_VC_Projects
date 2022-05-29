@@ -217,14 +217,59 @@ void D3D12HelloTriangle::LoadAssets()
 	// Create the vertex buffer.
 	{
 		// Define the geometry for a triangle.
-		Vertex triangleVertices[] =
+		/*Vertex triangleVertices[] =
 		{
-			{{0.0f, 0.25f * m_aspectRatio, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}},
-			{{0.25f, -0.25f * m_aspectRatio, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}},
-			{{-0.25f, -0.25f * m_aspectRatio, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}}
+			{{-0.25f, 0.25f * m_aspectRatio, 0.25f}, {1.0f, 0.0f, 1.0f, 1.0f}},
+			{{0.25f, -0.25f * m_aspectRatio, 0.25f}, {1.0f, 0.0f, 1.0f, 1.0f}},
+			{{-0.25f, -0.25f * m_aspectRatio, 0.25f}, {1.0f, 0.0f, 1.0f, 1.0f}}
+		};*/
+
+		Vertex cubeVertices[] =
+		{
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{-0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{-0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, -0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{-0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, 0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+			{{-0.25f, 0.25f, -0.25f}, {0.0f, 0.0f, 0.0f, 1.0f}},
 		};
 
-		const UINT vertexBufferSize = sizeof(triangleVertices);
+		const UINT vertexBufferSize = sizeof(cubeVertices);
 
 		// Note: using upload heaps to transfer static data like vert buffers is not 
 		// recommended. Every time the GPU needs it, the upload heap will be marshalled 
@@ -242,7 +287,7 @@ void D3D12HelloTriangle::LoadAssets()
 		UINT8* pVertexDataBegin;
 		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
 		ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+		memcpy(pVertexDataBegin, cubeVertices, sizeof(cubeVertices));
 		m_vertexBuffer->Unmap(0, nullptr);
 
 		// Initialize the vertex buffer view.
@@ -516,13 +561,13 @@ void D3D12HelloTriangle::CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3
 void D3D12HelloTriangle::CreateAccelerationStructures()
 {
 	// Build the bottom AS from the Triangle vertex buffer
-	AccelerationStructureBuffers bottomLevelBuffers = CreateBottomLevelAS({{m_vertexBuffer.Get(), 3}});
+	AccelerationStructureBuffers bottomLevelBuffers = CreateBottomLevelAS({{m_vertexBuffer.Get(), 6*6}});
 	AccelerationStructureBuffers planeBottomLevelBuffers = CreateBottomLevelAS({ {m_planeBuffer.Get(), 6} });
 	
 	// Three triangles and a plane
 	m_instances = { {bottomLevelBuffers.pResult, XMMatrixIdentity()},
-					{bottomLevelBuffers.pResult, XMMatrixTranslation(.6f, 0, 0)},
-					{bottomLevelBuffers.pResult, XMMatrixTranslation(-.6f, 0, 0)}, 
+					//{bottomLevelBuffers.pResult, XMMatrixTranslation(.6f, 0, 0)},
+					//{bottomLevelBuffers.pResult, XMMatrixTranslation(-.6f, 0, 0)}, 
 					{planeBottomLevelBuffers.pResult, XMMatrixTranslation(0, 0, 0)}}; // #DXR Extra: Per-Instance Data
 	CreateTopLevelAS(m_instances);
 	
@@ -738,7 +783,7 @@ void D3D12HelloTriangle::CreateShaderBindingTable()
 	m_sbtHelper.AddMissProgram(L"ShadowMiss", {});
 	
 	// Adding the triangles hit shader
-	for(int i = 0; i < 3; ++i) {
+	for(int i = 0; i < 1; ++i) {
 		m_sbtHelper.AddHitGroup(L"HitGroup", { (void*)(m_perInstanceConstantBuffers[i]->GetGPUVirtualAddress()) });
 		m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
 	}
@@ -820,12 +865,12 @@ void D3D12HelloTriangle::CreatePlaneVB()
 {
 	// Define the geometry for a plane.
 	Vertex planeVertices[] = {
-		{{-1.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 0
-		{{-1.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
-		{{01.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
-		{{01.5f, -.8f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
-		{{-1.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
-		{{01.5f, -.8f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}} // 4
+		{{-1.5f, -.25f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 0
+		{{-1.5f, -.25f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
+		{{01.5f, -.25f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
+		{{01.5f, -.25f, 01.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 2
+		{{-1.5f, -.25f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // 1
+		{{01.5f, -.25f, -1.5f}, {1.0f, 1.0f, 1.0f, 1.0f}} // 4
 	};
 	
 	const UINT planeBufferSize = sizeof(planeVertices);
