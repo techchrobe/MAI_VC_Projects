@@ -29,10 +29,8 @@ public class PointCloudRenderer : MonoBehaviour
             float x = float.Parse(numbers[0], CultureInfo.InvariantCulture.NumberFormat);
             float z = float.Parse(numbers[1], CultureInfo.InvariantCulture.NumberFormat) -20;
             float y = float.Parse(numbers[2], CultureInfo.InvariantCulture.NumberFormat);
+
             pos[i] = new Vector3(x, y, z);
-            float r = byte.Parse(numbers[3]);
-            float g = byte.Parse(numbers[4]);
-            float b = byte.Parse(numbers[5]);
             col[i] = new Color32(byte.Parse(numbers[3]), byte.Parse(numbers[4]), byte.Parse(numbers[5]), 255);
         }
 

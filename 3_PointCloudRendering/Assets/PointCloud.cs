@@ -8,8 +8,6 @@ public class PointCloud : MonoBehaviour
     protected ComputeBuffer positionbuffer;
     protected ComputeBuffer colorbuffer;
  
-    static readonly float[,] m = new float[,] { {0.8f,0.01f}, {0.01f,0.8f}};  
- 
     void Start ()
     {
         string[] lines = System.IO.File.ReadAllLines(@"Assets\model.pts");
