@@ -105,7 +105,7 @@ public class MarchingCubesGPU : MonoBehaviour {
         m_marchingCubes.Dispatch(0, N / 8, N / 8, N / 8);
 
         //Reads back the mesh data from the GPU and turns it into a standard unity mesh.
-        //ReadBackMesh(m_meshBuffer);
+        ReadBackMesh(m_meshBuffer);
 
     }
 
@@ -119,10 +119,10 @@ public class MarchingCubesGPU : MonoBehaviour {
     /// <param name="camera"></param>
     void OnRenderObject() {
         //Since mesh is in a buffer need to use DrawProcedual called from OnPostRender
-        m_drawBuffer.SetBuffer("_Buffer", m_meshBuffer);
-        m_drawBuffer.SetPass(0);
+        //m_drawBuffer.SetBuffer("_Buffer", m_meshBuffer);
+        //m_drawBuffer.SetPass(0);
 
-        Graphics.DrawProceduralNow(MeshTopology.Triangles, SIZE);
+        //Graphics.DrawProceduralNow(MeshTopology.Triangles, SIZE);
     }
 
     void OnDestroy() {

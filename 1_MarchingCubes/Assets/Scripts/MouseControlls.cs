@@ -15,11 +15,7 @@ public class MouseControlls : MonoBehaviour
     private Vector2 rotation;
     private Vector2 lastInputEvent;
     private float inputLagTimer;
-    private CharacterController controller;
-
-    private void Start() {
-        controller = gameObject.AddComponent<CharacterController>();
-    }
+    public bool wireframeMode = false;
 
     // Update is called once per frame
     void Update()
@@ -40,6 +36,10 @@ public class MouseControlls : MonoBehaviour
         if (Input.GetKey(KeyCode.Space)) {
             transform.LookAt(marchingCubes.transform);
         }
+
+        if(Input.GetKeyDown(KeyCode.E)) {
+            wireframeMode = !wireframeMode;
+        }
     }
 
     private Vector2 GetInput() {
@@ -52,5 +52,13 @@ public class MouseControlls : MonoBehaviour
             inputLagTimer = 0;
         }
         return lastInputEvent;
+    }
+
+    private void OnPreRender() {
+        GL.wireframe = wireframeMode;
+    }
+
+    void OnPostRender() {
+        GL.wireframe = false;
     }
 }
