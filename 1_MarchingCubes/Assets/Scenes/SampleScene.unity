@@ -467,4 +467,4 @@ MonoBehaviour:
   maxAngle: 90
   moveSpeed: 30
   marchingCubes: {fileID: 854599820}
-  wireframeMode: 0
+  wireframeMode: 1
